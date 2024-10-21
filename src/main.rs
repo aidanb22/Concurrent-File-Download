@@ -5,6 +5,8 @@ use tokio::io::AsyncWriteExt;
 use indicatif::ProgressBar;
 use futures::stream::StreamExt;
 
+
+
 async fn download_chunk(
     url: &str,
     client: &Client,
@@ -18,6 +20,7 @@ async fn download_chunk(
         .send()
         .await?;
 
+    
     if !response.status().is_success() {
         eprintln!("Failed to download part {}: {}", part, response.status());
         return Err("Failed to download chunk".into());
@@ -37,7 +40,7 @@ async fn download_file(
     let pb = ProgressBar::new(total_size);
 
     let mut futures = Vec::new();
-    for part in 0..num_parts {
+    for part in 0..num_parts{
         let range_start = part as u64 * chunk_size;
         let range_end = if part == num_parts - 1 {
             total_size - 1  // last part may be larger
@@ -47,19 +50,23 @@ async fn download_file(
         futures.push(download_chunk(url, client, part, range_start, range_end));
     }
 
+    
     // download parts concurrently
     let mut parts_data = futures::future::join_all(futures).await;
 
+    
     // handle any failed part downloads
     if parts_data.iter().any(|r| r.is_err()) {
         eprintln!("Some parts failed to download");
         return Err("Download failed".into());
     }
 
+    
     // merge parts and save to a file
     let filename = "output_file.download";
     let mut file = File::create(filename).await?;
 
+    
     for part_data in parts_data {
         let data = part_data?;
         file.write_all(&data).await?;
@@ -69,6 +76,7 @@ async fn download_file(
     pb.finish_with_message("Download completed!");
     Ok(())
 }
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -97,9 +105,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let url = matches.get_one::<String>("url").unwrap();
     let num_parts: usize = matches.get_one::<String>("parts").unwrap().parse()?;
-
     let client = Client::new();
 
+
+    
     // get total file size first
     let response = client.head(url).send().await?;
     let total_size = response
@@ -114,3 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+
+
+
